@@ -1,0 +1,12 @@
+.git/
+.gradle/
+build/
+.idea/
+.vscode/
+.env
+.env.*
+secrets/
+backups/
+*.log
+*.key
+*.pem

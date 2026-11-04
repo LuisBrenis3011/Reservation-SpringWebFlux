@@ -1,0 +1,60 @@
+services:
+
+  mongodb:
+    image: mongo:8.0.8
+    restart: always
+    container_name: eats-catalog
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: ${MONGODB_USERNAME:-master}
+      MONGO_INITDB_ROOT_PASSWORD: ${MONGODB_PASSWORD:?Define MONGODB_PASSWORD in .env}
+      MONGO_INITDB_DATABASE: ${MONGODB_DATABASE:-catalog}
+    ports:
+      - "127.0.0.1:${MONGODB_PORT:-27017}:27017"
+    volumes:
+      - ./db/mongo/init-mongo.js:/docker-entrypoint-initdb.d/init-mongo.js:ro
+    networks:
+      - eats-network
+
+  redis:
+    image: redis:7.4.1-alpine
+    restart: always
+    container_name: eats-redis
+    ports:
+      - "127.0.0.1:${REDIS_PORT:-6379}:6379"
+    command: ["redis-server", "--requirepass", "${REDIS_PASSWORD:?Define REDIS_PASSWORD in .env}"]
+    networks:
+      - eats-network
+
+  redis-commander:
+    image: rediscommander/redis-commander:latest
+    restart: always
+    container_name: eats-redis-ui
+    environment:
+      - REDIS_HOSTS=local:redis:6379:${REDIS_DATABASE:-0}:${REDIS_PASSWORD:?Define REDIS_PASSWORD in .env}
+      - HTTP_USER=${REDIS_UI_USERNAME:-admin}
+      - HTTP_PASSWORD=${REDIS_UI_PASSWORD:?Define REDIS_UI_PASSWORD in .env}
+    ports:
+      - "127.0.0.1:8081:8081"
+    depends_on:
+      - redis
+    networks:
+      - eats-network
+
+  db:
+    image: postgres:17.5
+    container_name: customers-db
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-admin}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Define POSTGRES_PASSWORD in .env}
+      POSTGRES_DB: ${POSTGRES_DB:-customers}
+    volumes:
+      - ./db/sql:/docker-entrypoint-initdb.d:ro
+    ports:
+      - "127.0.0.1:5432:5432"
+    restart: unless-stopped
+    networks:
+      - eats-network
+
+networks:
+  eats-network:
+    driver: bridge

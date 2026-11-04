@@ -1,0 +1,18 @@
+# Proveedor exclusivo de desarrollo, expuesto solo al host.
+services:
+  keycloak:
+    image: quay.io/keycloak/keycloak:26.8.1
+    command: [start-dev, --import-realm]
+    restart: unless-stopped
+    environment:
+      KC_BOOTSTRAP_ADMIN_USERNAME: ${EATS_IDENTITY_ADMIN_USER:?Ejecutar Setup-LocalIdentity.ps1}
+      KC_BOOTSTRAP_ADMIN_PASSWORD: ${EATS_IDENTITY_ADMIN_PASSWORD:?Ejecutar Setup-LocalIdentity.ps1}
+      KC_HOSTNAME: http://localhost:8180
+    ports:
+      - '127.0.0.1:8180:8080'
+    volumes:
+      - keycloak-data:/opt/keycloak/data
+      - ../../../secrets/local-identity/import:/opt/keycloak/data/import:ro
+
+volumes:
+  keycloak-data:

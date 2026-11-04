@@ -1,0 +1,38 @@
+# Entorno separado de desarrollo; una réplica no es alta disponibilidad.
+# Pasar explícitamente -p eats-availability y --env-file desde la raíz del servicio.
+services:
+  mongodb-replica:
+    image: mongo:8.0.8
+    restart: unless-stopped
+    entrypoint:
+      - /bin/bash
+      - -ec
+      - |
+        cp /run/secrets/mongo-keyfile /tmp/mongo-keyfile
+        chown mongodb:mongodb /tmp/mongo-keyfile
+        chmod 400 /tmp/mongo-keyfile
+        exec /usr/local/bin/docker-entrypoint.sh "$$@"
+      - mongo-start
+    command: [mongod, --replSet, rs0, --keyFile, /tmp/mongo-keyfile, --bind_ip_all, --port, '27018']
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: ${MONGODB_USERNAME:-master}
+      MONGO_INITDB_ROOT_PASSWORD: ${MONGODB_PASSWORD:?Define MONGODB_PASSWORD en .env}
+    ports:
+      - '127.0.0.1:27018:27018'
+    volumes:
+      - availability-mongo-data:/data/db
+    secrets:
+      - mongo-keyfile
+    healthcheck:
+      test: [CMD, mongosh, --quiet, --port, '27018', --eval, 'quit(db.adminCommand({ping:1}).ok ? 0 : 1)']
+      interval: 10s
+      timeout: 5s
+      retries: 12
+      start_period: 30s
+
+volumes:
+  availability-mongo-data:
+
+secrets:
+  mongo-keyfile:
+    file: ${MONGODB_REPLICA_KEYFILE:?Define ruta absoluta al keyfile local fuera de Git}

@@ -1,0 +1,97 @@
+plugins {
+	id 'java'
+    id 'java-test-fixtures'
+	id 'org.springframework.boot' version '4.0.1'
+	id 'io.spring.dependency-management' version '1.1.7'
+}
+
+group = 'com.brenis'
+version = '0.0.1-SNAPSHOT'
+description = 'Demo project for Spring Boot'
+
+java {
+	toolchain {
+		languageVersion = JavaLanguageVersion.of(21)
+	}
+}
+
+configurations {
+	compileOnly {
+		extendsFrom annotationProcessor
+	}
+}
+
+repositories {
+	mavenCentral()
+}
+
+dependencies {
+    implementation 'io.micrometer:micrometer-core'
+    // La cadena de seguridad se implementa en T014; no activar autoconfiguración ahora.
+    implementation 'org.springframework.security:spring-security-config'
+    implementation 'org.springframework.security:spring-security-web'
+    implementation 'org.springframework.security:spring-security-oauth2-resource-server'
+    implementation 'org.springframework.security:spring-security-oauth2-jose'
+    // Spring Boot dependencies
+	implementation 'org.springframework.boot:spring-boot-starter-webflux'
+    implementation 'org.springframework.boot:spring-boot-starter-validation'
+    implementation 'org.springframework.boot:spring-boot-starter-data-redis-reactive'
+    implementation 'org.springframework.boot:spring-boot-starter-data-mongodb-reactive'
+    developmentOnly 'org.springframework.boot:spring-boot-devtools'
+
+    // Testing dependencies
+	testImplementation 'org.springframework.boot:spring-boot-starter-webflux-test'
+    testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
+    testImplementation 'org.springframework.security:spring-security-test'
+    testImplementation 'io.projectreactor:reactor-test'
+
+    testFixturesApi 'org.testcontainers:testcontainers-mongodb'
+    testFixturesApi 'org.springframework.security:spring-security-test'
+    testFixturesApi 'org.springframework.boot:spring-boot-starter-webflux-test'
+
+    // R2DBC dependencies
+    implementation 'org.springframework.data:spring-data-r2dbc'
+    runtimeOnly 'org.postgresql:r2dbc-postgresql:1.0.5.RELEASE'
+    runtimeOnly 'io.r2dbc:r2dbc-pool'
+
+    // Lombok dependencies
+    compileOnly 'org.projectlombok:lombok'
+    annotationProcessor 'org.projectlombok:lombok'
+
+    // MapStruct dependencies
+    annotationProcessor 'org.mapstruct:mapstruct-processor:1.6.3'
+    implementation 'org.mapstruct:mapstruct:1.6.3'
+    annotationProcessor 'org.projectlombok:lombok-mapstruct-binding:0.2.0'
+}
+
+tasks.named('test') {
+	useJUnitPlatform()
+}
+
+sourceSets {
+    integrationTest {
+        compileClasspath += sourceSets.main.output
+        runtimeClasspath += sourceSets.main.output
+    }
+}
+
+configurations {
+    integrationTestImplementation.extendsFrom testImplementation
+    integrationTestRuntimeOnly.extendsFrom testRuntimeOnly
+}
+
+dependencies {
+    integrationTestImplementation(testFixtures(project(':')))
+    testFixturesApi 'org.mongodb:bson'
+    testFixturesApi 'org.springframework.security:spring-security-oauth2-jose'
+}
+
+tasks.register('integrationTest', Test) {
+    description = 'Pruebas de integración aisladas; requieren Docker.'
+    group = 'verification'
+    testClassesDirs = sourceSets.integrationTest.output.classesDirs
+    classpath = sourceSets.integrationTest.runtimeClasspath
+    useJUnitPlatform()
+    // No filtrar por nombre: descubrir tanto *Tests como *IT.
+    shouldRunAfter tasks.named('test')
+}
