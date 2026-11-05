@@ -1,26 +1,31 @@
-# Ejecutar la demo básica
+# Configuración y ejecución local
 
-Requisitos: JDK 21, Docker con Compose y puertos locales 27017, 6379 y 8080 libres.
-El wrapper proporciona Gradle; la primera ejecución puede descargar dependencias.
-Ejecutar desde la raíz del servicio en PowerShell. No se ejecutaron estos pasos
-durante la preparación de la presentación.
+## Requisitos
+
+- JDK 21 y `JAVA_HOME` apuntando a su instalación.
+- Docker y Docker Compose.
+- Puertos locales 27017, 6379 y 8080 disponibles.
+
+El proyecto incluye Gradle Wrapper. La primera ejecución puede descargar Gradle
+y las dependencias necesarias. Los comandos siguientes se ejecutan desde la raíz
+del proyecto en PowerShell.
 
 ## Configuración
 
-Conservar `.env` si ya existe. En una copia nueva:
+En una copia nueva del repositorio, crea el archivo de configuración local:
 
 ```powershell
 Copy-Item .env.example .env
 notepad .env
 ```
 
-Reemplazar todos los valores `replace-with-...` por contraseñas locales distintas
-y no reutilizadas. No subir `.env` ni pegarlo en incidencias. Usar `CLAVE=valor`
-sin comillas; para este lector compartido utilizar contraseñas alfanuméricas.
-Mantener `AVAILABILITY_ENABLED=false` y `RESERVATIONS_ENABLED=false`.
-No utilizar las credenciales históricas del proyecto.
+Si `.env` ya existe, consérvalo. Cambia los valores de ejemplo por contraseñas
+locales distintas y no reutilizadas. Usa el formato `CLAVE=valor` sin comillas;
+para este entorno compartido por Spring y Compose se recomiendan valores
+alfanuméricos. Mantén `AVAILABILITY_ENABLED=false` y `RESERVATIONS_ENABLED=false`
+para el recorrido básico del catálogo. No compartas ni subas `.env` a Git.
 
-Comprobar `JAVA_HOME` con JDK 21. Estos comandos son instrucciones, no resultados:
+## Iniciar el catálogo
 
 ```powershell
 java --version
@@ -29,36 +34,31 @@ docker compose --env-file .env -f src/main/resources/docker-compose.yml up -d mo
 .\gradlew.bat bootRun
 ```
 
-Compose define otros servicios, pero estos comandos solo inician MongoDB y Redis.
-El inicializador Mongo incorpora los datos de ejemplo existentes. Esperar las
-dependencias antes de iniciar Spring. En IntelliJ utilizar JDK 21 y la raíz del
-servicio como directorio de trabajo. Desde otra terminal:
+Espera a que MongoDB y Redis estén disponibles antes de iniciar el backend. Compose
+define servicios adicionales, pero los comandos anteriores solo inician las dos
+dependencias del catálogo. Mantén abierta la terminal del backend y, en otra,
+consulta los restaurantes:
 
 ```powershell
 Invoke-RestMethod 'http://localhost:8080/catalog/restaurants?page=0&size=5'
 ```
 
-No se adjunta una respuesta inventada: depende de los datos locales.
+El inicializador de Mongo incluye datos de ejemplo. Si ya existe una base local,
+sus datos pueden ser diferentes. Mongo inicializa credenciales y datos al crear
+almacenamiento nuevo; editar `.env` no cambia la contraseña de una base existente.
+No es necesario borrar datos para ejecutar este recorrido.
 
-## Conservación de datos
+Para la configuración de mesas y turnos se requiere además un replica set y un
+emisor JWT. Consulta [identidad local](identidad-local.md). El gate de reservas
+v2 está desactivado por defecto y su activación requiere preparación adicional.
 
-- No ejecutar `down -v` ni borrar bases o contenedores para resolver errores.
-- Mongo inicializa credenciales y datos sobre almacenamiento nuevo. Editar `.env`
-  no actualiza la contraseña de una base existente.
-- Si un puerto está ocupado, adaptar las variables de Compose y Spring. Para
-  el backend puede usarse `SERVER_PORT`; adaptar también las URLs de ejemplo.
-- Mesas y turnos requieren configuración adicional: seguir
-  [identidad local](identidad-local.md) y las guías enlazadas antes de activar gates.
-- El ensayo del puente necesita Gradle local compatible además del wrapper;
-  ese requisito no corresponde a la demo básica.
-
-## Pruebas disponibles
+## Pruebas
 
 ```powershell
 .\gradlew.bat test
 .\gradlew.bat integrationTest
 ```
 
-La integración utiliza Testcontainers y requiere Docker. Revisar los requisitos
-de cada suite; no se afirma que la suite completa del árbol actual haya pasado.
-Los informes se generan en `build/reports/tests/`, excluido de Git.
+Las pruebas de integración utilizan Testcontainers y necesitan Docker. Los informes
+se generan bajo `build/reports/tests/`. Consulta el [estado de validación](estado-portafolio.md)
+para distinguir los resultados registrados de los pendientes.
